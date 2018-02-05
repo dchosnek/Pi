@@ -1,20 +1,6 @@
-# Pi Clock with NTP
+# Headless install of Raspberry Pi Zero W
 
-This project uses a Raspberry Pi Zero with the Adafruit 128x64 OLED Bonnet to display the current time in large letters followed by a single line of text underneath. The buttons on the OLED Bonnet are used to scroll through various screens of information.
-
-- clock and current day and date
-- clock with current temperature and weather forecast (obtained from Yahoo weather)
-- statistics like IP address and uptime
-
-## Bill of materials
-
-- Raspberry Pi Zero W
-- Adafruit Pi Protector for Raspberry Pi Model Zero
-- Break-away 0.1" 2x20-pin Strip Dual Male Header
-- Adafruit 128x64 OLED Bonnet for Raspberry Pi
-- 32GB micro-SD card (oversized for the application but it was inexpensive)
-
-## Headless install of Raspberry Pi Zero W
+These instructions show how to start up a new Pi Zero W with PiOLED display running without connecting a monitor or keyboard to the Pi.
 
 Since the Pi Zero W has micro-HDMI and micro-USB connectors, it's much easier to put the information for your wireless network on the boot volume and SSH to the Pi to configure it. The instructions for doing this are here:
 
@@ -48,12 +34,6 @@ You should change the default password for the `pi` account or create a new user
 ```
 sudo apt-get update
 sudo apt-get dist-upgrade
-```
-
-Lastly, I copied the contents of this repo to the `/home/pi` directory and added the following line to `/etc/rc.local`:
-
-```python
-sudo python /home/pi/piclock.py &
 ```
 
 ## Preparing for the OLED screen

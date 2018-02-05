@@ -4,7 +4,13 @@ This project uses a Raspberry Pi Zero with the Adafruit 128x64 OLED Bonnet to di
 
 - clock and current day and date
 - clock with current temperature and weather forecast (obtained from Yahoo weather)
-- statistics like IP address and uptime
+- statistics like IP address and hostname (4 lines of stats are displayed)
+
+Just add the following line to `\etc\rc.local` to start the clock on Pi startup:
+
+``` Python
+python /home/pi/piclock.py &
+```
 
 ## Bill of materials
 
@@ -16,64 +22,23 @@ This project uses a Raspberry Pi Zero with the Adafruit 128x64 OLED Bonnet to di
 
 ## Headless install of Raspberry Pi Zero W
 
-Since the Pi Zero W has micro-HDMI and micro-USB connectors, it's much easier to put the information for your wireless network on the boot volume and SSH to the Pi to configure it. The instructions for doing this are here:
+The method for getting the Pi up and running are described in HEADLESS.md in this repository.
 
-https://learn.adafruit.com/raspberry-pi-zero-creation/overview
+## Noteworthy
 
-Summary:
-- Use Etcher to burn the Raspbian Stretch image on the micro-SD card. You do not have to unzip the file when using Etcher.
-- Mount the SD card to a computer
-- Create a file named `wpa_supplicant.conf` with the details of your wifi network (see file format below).
-- Edit the `config.txt` file to enable the UART for troubleshooting (I didn't do this).
-- Add an empty file named `ssh` to the boot volume. SSH is not enabled by default on later versions of Raspbian.
-- Install the micro-SD card into your Pi and power it on. It should automatically attach to your wifi network.
+There were two challenges to solve: how to keep the script from accessing the internet before the network stack was fully operational and how to display text in a readable fashion.
 
-This is the format of the `wpa_supplicant.conf` file for **Raspbian Stretch**.
+### Wait for network
 
-```
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
+The script displays the text "Please Wait" on the PiOLED screen until the network is ready. Check for network availability by checking if the Pi has an IP address. Look for the output of `hostname -I` to have a length greater than one.
 
-network={
-    ssid="YOURSSID"
-    psk="YOURPASSWORD"
-    scan_ssid=1
-}
-```
+### Display text effectively
 
-## First boot
+We have two different display modes in this script:
+- show the clock in large digits and a secondary line of information below it
+- show four lines of statistics with all four lines being the same font/size
 
-You should change the default password for the `pi` account or create a new user account. I also used `sudo raspi-config` to set my timezone and change the hostname. Use the following commands to update Raspbian:
-
-```
-sudo apt-get update
-sudo apt-get dist-upgrade
-```
-
-Lastly, I copied the contents of this repo to the `/home/pi` directory and added the following line to `/etc/rc.local`:
-
-```python
-sudo python /home/pi/piclock.py &
-```
-
-## Preparing for the OLED screen
-
-Prior to installing the OLED Bonnet, run the following commands on the Pi as described at https://learn.adafruit.com/adafruit-128x64-oled-bonnet-for-raspberry-pi/usage
-
-```python
-sudo apt-get update
-sudo apt-get install build-essential python-dev python-pip
-sudo pip install RPi.GPIO
-sudo apt-get install python-imaging python-smbus
-sudo apt-get install git
-git clone https://github.com/adafruit/Adafruit_Python_SSD1306.git
-cd Adafruit_Python_SSD1306
-sudo python setup.py install
-# get I2C bus ready
-sudo apt-get install -y python-smbus
-sudo apt-get install -y i2c-tools
-# under "interfacing options" enable I2C
-sudo raspi-config
-```
-
-Now you can install the screen and run `sudo i2cdetect -y 1` to see the display listed (probably at address `3c`).
+I wanted to make the function that displays the text very flexible and simple.
+- 1 line: The one line is displayed as large as possible without cutting off any of the text.
+- 2 lines: The first line is displayed as large as possible and then the second line is displayed as large as possible in the space remaining after the first line is displayed.
+- Greater than 2 lines: Each line is displayed with the same font family and size. The function looks for the line that takes the most space on the screen and then sizes all other lines to match.
