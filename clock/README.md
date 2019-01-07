@@ -3,7 +3,7 @@
 This project uses a Raspberry Pi Zero with the Adafruit 128x64 OLED Bonnet to display the current time in large letters followed by a single line of text underneath. The buttons on the OLED Bonnet are used to scroll through various screens of information.
 
 - clock and current day and date
-- clock with current temperature and weather forecast (obtained from Yahoo weather)
+- clock with current temperature and weather forecast (obtained from OpenWeather)
 - statistics like IP address and hostname (4 lines of stats are displayed)
 
 Just add the following line to `\etc\rc.local` to start the clock on Pi startup:
@@ -23,6 +23,21 @@ python /home/pi/piclock.py &
 ## Headless install of Raspberry Pi Zero W
 
 The method for getting the Pi up and running are described in HEADLESS.md in this repository.
+
+## Weather
+
+The Yahoo weather API was deprecated in January 2019, so this project converted to using OpenWeatherMap (https://openweathermap.org/api) instead. The account is free. You are given an `appid` that must be used in each API call to get the current weather and the forecast for the rest of the day. This script is written to read your zip code and your `appid` from a file called `personalization.json` that has the following format:
+
+```json
+{
+    "appid": "f27e0a5894b6c31dd09e354f7a182bc6",
+    "zip": "90210"
+}
+```
+
+Make sure to put this file on your Pi with correct values.
+
+One unfortunate behavior of the weather forecast API is that it returns the forecasted high and low at various points for the **remainder** of the day and the next few days. In other words, reading the forecast at noon will not return the highs or lows seen during the morning. This project will may show different high and low temperature values throughout the day as it is forecasting the remainder of the day. Furthermore, later in the day it will not show any forecasted high or low as the OpenWeatherMap API stops returning data points for the current day as it gets later.
 
 ## Noteworthy
 

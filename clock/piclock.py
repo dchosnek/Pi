@@ -4,7 +4,7 @@ https://www.adafruit.com/product/3400
 https://www.adafruit.com/product/3192
 
 This clock relies on the accuracy of the Pi system clock (via NTP). It
-also retrieves the weather from the Yahoo weather API every 5 minutes.
+also retrieves the weather from the OpenWeather API every 5 minutes.
 
 written by Doron Chosnek
 """
@@ -24,12 +24,21 @@ import Adafruit_SSD1306
 # Globals
 # -----------------------------------------------------------------------------
 
-WEATHER_URL = 'https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%3D12791571&format=json'
 FONT_FAMILY_PRIMARY = "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
 FONT_FAMILY_SECONDARY = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 SLEEP_TIMER = 0.2
 WEATHER_TIMER = int(300 / SLEEP_TIMER)
 MINIMUM_SIZE = 1
+
+# pull personalization (zip code and appid) in order to read the appropriate
+# weather data
+with open('personalization.json') as f:
+    data = json.load(f)
+ZIP = data['zip']
+APPID = data['appid']
+OPENWEATHER_CURRENT_URL = 'http://api.openweathermap.org/data/2.5/weather?zip={},us&units=imperial&appid={}'.format(ZIP, APPID)
+OPENWEATHER_FORECAST_URL = 'http://api.openweathermap.org/data/2.5/forecast?zip={},us&units=imperial&cnt=8&appid={}'.format(ZIP, APPID)
+
 
 # Input pins:
 L_pin = 27
@@ -77,17 +86,44 @@ def biggest_font(screen_width, screen_height, family, message):
         size += 1
     return size - 1
 
-def get_weather():
+def convert_to_integer(dec):
+    return int(round(dec))
+
+def get_weather_openweathermap():
+    """Retrieves the weather from Open Weather map using their free API
     """
-    Retrieves the weather from Yahoo using an API that is supposed to be closed
-    but appears to be open for now.
-    """
-    result = urllib2.urlopen(WEATHER_URL).read()
-    data = json.loads(result)
-    temp_current = data['query']['results']['channel']['item']['condition']['temp']
-    temp_hi = data['query']['results']['channel']['item']['forecast'][0]['high']
-    temp_lo = data['query']['results']['channel']['item']['forecast'][0]['low']
-    return (temp_current, temp_lo, temp_hi)
+    (current, lo, hi) = (None, None, None)
+
+    # get current temperature
+    try:
+        result = urllib2.urlopen(OPENWEATHER_CURRENT_URL).read()
+        data = json.loads(result)
+        current = convert_to_integer(data['main']['temp'])
+    except:
+        return (None, None, None)
+
+    # Get forecast high and low for the day; this API endpoint returns the
+    # multi-day forecast, so first we have to just look at today.
+    # The other strange anomaly is that this forecast shows the high and low
+    # for the rest of the current day, but shows no forecast if it is late in
+    # the day.
+    today = time.strftime("%Y-%m-%d")
+    try:
+        result = urllib2.urlopen(OPENWEATHER_FORECAST_URL).read()
+        data = json.loads(result)
+    except:
+        return (None, None, None)
+    
+    for entry in data['list']:
+        if today in entry['dt_txt']:
+            if lo is None or lo > entry['main']['temp_min']:
+                lo = entry['main']['temp_min']
+            if hi is None or hi < entry['main']['temp_max']:
+                hi = entry['main']['temp_max']
+            lo = convert_to_integer(lo)
+            hi = convert_to_integer(hi)
+    
+    return (current, lo, hi)
 
 def network_ready():
     """
@@ -171,7 +207,7 @@ disp.image(image)
 disp.display()
 
 timer = 0
-screen_number = 0
+screen_number = 1
 screen_change = True
 
 while not network_ready():
@@ -196,7 +232,7 @@ while True:
     # ---------------------------------------------------------------
 
     if timer == 0:
-        temp_current, temp_lo, temp_hi = get_weather()
+        temp_current, temp_lo, temp_hi = get_weather_openweathermap()
     timer += 1
     timer = 0 if timer >= WEATHER_TIMER else timer
 
@@ -210,7 +246,12 @@ while True:
     elif screen_number == 1:
         cmd = "date +\"%_I:%M\""
         lines.append(subprocess.check_output(cmd, shell=True))
-        lines.append("{} deg, Lo:{}, Hi:{}".format(temp_current, temp_lo, temp_hi))
+        if temp_current is None:
+            lines.append("WEATHER UNAVAILABLE")
+        if None in [temp_lo, temp_hi]:
+            lines.append("{} degrees".format(temp_current))
+        else:
+            lines.append("{} deg, Lo:{}, Hi:{}".format(temp_current, temp_lo, temp_hi))
     elif screen_number == 2:
         cmd = "hostname"
         lines.append(subprocess.check_output(cmd, shell=True))
