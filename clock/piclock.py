@@ -16,6 +16,7 @@ import json
 import subprocess
 import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
+from argparse import ArgumentParser
 
 # import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
@@ -32,7 +33,12 @@ MINIMUM_SIZE = 1
 
 # pull personalization (zip code and appid) in order to read the appropriate
 # weather data
-with open('personalization.json') as f:
+
+parser = ArgumentParser()
+parser.add_argument("--settings", required=True, help="JSON file containing zip code and appid")
+args = parser.parse_args()
+
+with open(args.settings) as f:
     data = json.load(f)
 ZIP = data['zip']
 APPID = data['appid']
@@ -87,6 +93,8 @@ def biggest_font(screen_width, screen_height, family, message):
     return size - 1
 
 def convert_to_integer(dec):
+    """Rounds a float and returns it as an integer
+    """
     return int(round(dec))
 
 def get_weather_openweathermap():

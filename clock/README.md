@@ -8,8 +8,8 @@ This project uses a Raspberry Pi Zero with the Adafruit 128x64 OLED Bonnet to di
 
 Just add the following line to `\etc\rc.local` to start the clock on Pi startup:
 
-``` Python
-python /home/pi/piclock.py &
+``` bash
+python /home/pi/piclock.py --settings settings.json &
 ```
 
 ## Bill of materials
@@ -26,7 +26,7 @@ The method for getting the Pi up and running are described in HEADLESS.md in thi
 
 ## Weather
 
-The Yahoo weather API was deprecated in January 2019, so this project converted to using OpenWeatherMap (https://openweathermap.org/api) instead. The account is free. You are given an `appid` that must be used in each API call to get the current weather and the forecast for the rest of the day. This script is written to read your zip code and your `appid` from a file called `personalization.json` that has the following format:
+The Yahoo weather API was deprecated in January 2019, so this project converted to using OpenWeatherMap (https://openweathermap.org/api) instead. The account is free. You are given an `appid` that must be used in each API call to get the current weather and the forecast for the rest of the day. This script is written to read your zip code and your `appid` to be used with the weather API from a JSON file called whose path is provided at the command line. The file has the following format:
 
 ```json
 {
